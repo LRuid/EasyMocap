@@ -11,24 +11,25 @@ from os.path import join
 from tqdm import tqdm
 from glob import glob
 import numpy as np
+from multiprocessing import Process
 
-mkdir = lambda x: os.makedirs(x, exist_ok=True)
+mkdir = lambda x: os.makedirs(x, exist_ok=True)#匿名函数 返回值mkdir是一个函数，参数是x 等价于 mkdir(x) = os.makedirs(x, exist_ok=True)
 
 def extract_video(videoname, path, start, end, step):
     base = os.path.basename(videoname).replace('.mp4', '')
-    if not os.path.exists(videoname):
+    if not os.path.exists(videoname):#判断视频是否存在，不存在直接返回base
         return base
     outpath = join(path, 'images', base)
-    if os.path.exists(outpath) and len(os.listdir(outpath)) > 0:
-        num_images = len(os.listdir(outpath))
-        print('>> exists {} frames'.format(num_images))
+    if os.path.exists(outpath) and len(os.listdir(outpath)) > 0:#判断图片文件夹是否被创建出来
+        num_images = len(os.listdir(outpath))#判断图片文件夹n中的图片个数
+        print('>> exists {} frames'.format(num_images))#已经存在多少帧
         return base
     else:
-        os.makedirs(outpath, exist_ok=True)
-    video = cv2.VideoCapture(videoname)
-    totalFrames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-    for cnt in tqdm(range(totalFrames), desc='{:10s}'.format(os.path.basename(videoname))):
-        ret, frame = video.read()
+        os.makedirs(outpath, exist_ok=True)#创建文件夹
+    video = cv2.VideoCapture(videoname)#opencv传入视频
+    totalFrames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))#获得视频帧数
+    for cnt in tqdm(range(totalFrames), desc='{:10s}'.format(os.path.basename(videoname))):#desc（'str'）: 传入进度条的前缀
+        ret, frame = video.read()#ret 取得帧正确返回true
         if cnt < start:continue
         if cnt >= end:break
         if not ret:continue
@@ -221,14 +222,14 @@ def extract_yolo_hrnet(image_root, annot_root, ext='jpg', use_low=False):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('path', type=str, help="the path of data")
+    parser.add_argument('--path', type=str, help="the path of data",default='/home/lrd/data/lrd/easymocap_filer/zju_data')
     parser.add_argument('--mode', type=str, default='openpose', choices=['openpose', 'yolo-hrnet'], help="model to extract joints from image")
     parser.add_argument('--ext', type=str, default='jpg', choices=['jpg', 'png'], help="image file extension")
     parser.add_argument('--annot', type=str, default='annots', help="sub directory name to store the generated annotation files, default to be annots")
     parser.add_argument('--highres', type=float, default=1)
-    parser.add_argument('--handface', action='store_true')
+    parser.add_argument('--handface', action='store_true')#表示命令行只要输入了--handface ，handface=True
     parser.add_argument('--openpose', type=str, 
-        default='/media/qing/Project/openpose')
+        default='/home/lrd/data/lrd/easymocap_filer/openpose')
     parser.add_argument('--render', action='store_true', 
         help='use to render the openpose 2d')
     parser.add_argument('--no2d', action='store_true',
@@ -244,24 +245,30 @@ if __name__ == "__main__":
     parser.add_argument('--gtbbox', action='store_true',
         help='use the ground-truth bounding box, and hrnet to estimate human pose')
     parser.add_argument('--debug', action='store_true')
-    parser.add_argument('--path_origin', default=os.getcwd())
+    parser.add_argument('--path_origin', default=os.getcwd())#返回当前工作目录
     args = parser.parse_args()
     mode = args.mode
 
-    if os.path.isdir(args.path):
-        image_path = join(args.path, 'images')
-        os.makedirs(image_path, exist_ok=True)
-        subs_image = sorted(os.listdir(image_path))
-        subs_videos = sorted(glob(join(args.path, 'videos', '*.mp4')))
-        if len(subs_videos) > len(subs_image):
-            videos = sorted(glob(join(args.path, 'videos', '*.mp4')))
+    if os.path.isdir(args.path):#判断path是不是文件夹，如果是
+        image_path = join(args.path, 'images')#连接文件夹和images
+        os.makedirs(image_path, exist_ok=True)#创建images文件夹，如果exist_ok为True，则在目标目录已存在的情况下不会触发FileExistsError异常。
+        subs_image = sorted(os.listdir(image_path))#图片地址排序
+        subs_videos = sorted(glob(join(args.path, 'videos', '*.mp4')))#用法：glob( path + '*.某格式' ),返回list videos下的所有MP4文件
+        if len(subs_videos) > len(subs_image):#判断视频和图片文件夹的个数是否相等
+            videos = sorted(glob(join(args.path, 'videos', '*.mp4')))#为什么不直接用subs_videos？
             subs = []
+            cameras_extract_nums = []
             for video in videos:
-                basename = extract_video(video, args.path, start=args.start, end=args.end, step=args.step)
-                subs.append(basename)
+                p = Process(target=extract_video,args=(video, args.path, args.start, args.end, args.step))
+                #basename = extract_video(video, args.path, start=args.start, end=args.end, step=args.step)
+                subs.append(p)
+                cameras_extract_nums.append(p.name.replace('Process-',''))
+                p.start()
+            for process_example in subs:
+                process_example.join()
         else:
             subs = sorted(os.listdir(image_path))
-        print('cameras: ', ' '.join(subs))
+        print('cameras: ', ' '.join(subs))#10.24完成多进程提取视频
         if not args.no2d:
             for sub in subs:
                 image_root = join(args.path, 'images', sub)

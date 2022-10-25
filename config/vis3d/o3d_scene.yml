@@ -1,4 +1,5 @@
 host: '127.0.0.1'
+#host: '192.168.3.201'
 port: 9999
 
 width: 1920
@@ -10,8 +11,10 @@ filter: True
 block: True # block visualization or not, True for visualize each frame, False in realtime applications
 rotate: False
 debug: False
-write: False
-out: 'none'
+#write: False 默认配置
+write: True
+#out: 'none' 默认配置
+out: '/home/lrd/data/lrd/easymocap_filer/vis3d/output/skel-body25'
 
 body_model:
   module: "easymocap.visualize.skelmodel.SkelModel"
@@ -23,8 +26,10 @@ camera:
   phi: 0
   theta: -30
   cx: 0.
-  cy: 0.
-  cz: 6.
+  #cy: 0.5
+  cy: 0. 
+  cz: 6. 
+  #cz: 3.
 
 scene:
   "easymocap.visualize.o3dwrapper.create_coord":
