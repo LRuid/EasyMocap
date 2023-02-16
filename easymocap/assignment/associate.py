@@ -10,7 +10,7 @@ from ..mytools.reconstruction import batch_triangulate, projectN3
 from ..config import load_object
 
 def views_from_dimGroups(dimGroups):
-    views = np.zeros(dimGroups[-1], dtype=np.int)
+    views = np.zeros(dimGroups[-1], dtype=int)
     for nv in range(len(dimGroups) - 1):
         views[dimGroups[nv]:dimGroups[nv+1]] = nv
     return views
@@ -42,8 +42,8 @@ def simple_associate(annots, affinity, dimGroups, Pall, group, cfg):
         views_cnt[:, nv] = affinity[:, dimGroups[nv]:dimGroups[nv+1]].sum(axis=1)
     views_cnt = (views_cnt>0.5).sum(axis=1)
     sortidx = np.argsort(-views_cnt)
-    p2dAssigned = np.zeros(n2D, dtype=np.int) - 1
-    indices_zero = np.zeros((nViews), dtype=np.int) - 1
+    p2dAssigned = np.zeros(n2D, dtype=int) - 1
+    indices_zero = np.zeros((nViews), dtype=int) - 1
     for idx in sortidx:
         if p2dAssigned[idx] != -1:
             continue
@@ -77,9 +77,9 @@ def simple_associate(annots, affinity, dimGroups, Pall, group, cfg):
             err = ((kptsRepro[:, :, 2]*keypoints2d[:, :, 2]) > 0.) * np.linalg.norm(kptsRepro[:, :, :2] - keypoints2d[:, :, :2], axis=2)
             size = (bboxes[:, [2, 3]] - bboxes[:, [0, 1]]).max(axis=1, keepdims=True)
             err = err / size
-            err_view = err.sum(axis=1)/((err>0.).sum(axis=1))
+            err_view = err.sum(axis=1)/((err>0. + 1e-9).sum(axis=1))
             flag = (err_view < cfg.max_repro_error).all()
-            err = err.sum()/(err>0).sum()
+            err = err.sum()/(err>0 + 1e-9).sum()
             # err_view = err.sum(axis=1)/((err>0.).sum(axis=1))
             # err = err.sum()/(err>0.).sum()
             # flag = err_view.max() < err_view.mean() * 2

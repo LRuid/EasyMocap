@@ -7,6 +7,16 @@ from easymocap.mytools.vis_base import merge, plot_keypoints_auto
 from .debug_utils import log, mywarn, myerror
 
 def batch_triangulate(keypoints_, Pall, min_view=2):
+    """ triangulate the keypoints of whole body
+
+    Args:
+        keypoints_ (nViews, nJoints, 3): 2D detections
+        Pall (nViews, 3, 4): projection matrix of each view
+        min_view (int, optional): min view for visible points. Defaults to 2.
+
+    Returns:
+        keypoints3d: (nJoints, 4)
+    """
     # keypoints: (nViews, nJoints, 3)
     # Pall: (nViews, 3, 4)
     # A: (nJoints, nViewsx2, 4), x: (nJoints, 4, 1); b: (nJoints, nViewsx2, 1)
@@ -375,7 +385,7 @@ def check_cluster(affinity, row, views, dimGroups, indices, p2dAssigned, visited
     return indices_all
 
 def views_from_dimGroups(dimGroups):
-    views = np.zeros(dimGroups[-1], dtype=np.int)
+    views = np.zeros(dimGroups[-1], dtype=int)
     for nv in range(len(dimGroups) - 1):
         views[dimGroups[nv]:dimGroups[nv+1]] = nv
     return views
@@ -452,11 +462,11 @@ class SimpleMatchAndTriangulator(SimpleTriangulator):
             sum1 += affinity[:, start:end].max(axis=-1)
         n2d = affinity.shape[0]
         nViews = len(dimGroups) - 1
-        idx_zero = np.zeros(nViews, dtype=np.int) - 1
+        idx_zero = np.zeros(nViews, dtype=int) - 1
         views = views_from_dimGroups(dimGroups)
         # the assigned results of each person
-        p2dAssigned = np.zeros(n2d, dtype=np.int) - 1
-        visited = np.zeros(n2d, dtype=np.int)
+        p2dAssigned = np.zeros(n2d, dtype=int) - 1
+        visited = np.zeros(n2d, dtype=int)
         sortidx = np.argsort(-sum1)
         pid = 0
         k3dresults = []
@@ -589,6 +599,7 @@ class SimpleMatchAndTriangulator(SimpleTriangulator):
             plt.vlines([i-0.5 for i in dimGroups[1:]], -0.5, M-0.5, 'w')
             plt.ioff()
             plt.show()
+            import ipdb;ipdb.set_trace()
         return aff_svt
 
     def _track_add(self, res):
