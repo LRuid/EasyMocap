@@ -9,8 +9,8 @@ import os
 import argparse
 
 def load_parser():
-    parser = argparse.ArgumentParser('EasyMocap commond line tools')
-    parser.add_argument('path', type=str)
+    parser = argparse.ArgumentParser('EasyMocap commond line tools')#描述词
+    parser.add_argument('--path', type=str)
     parser.add_argument('--out', type=str, default=None)
     parser.add_argument('--cfg', type=str, default=None)
     parser.add_argument('--camera', type=str, default=None)
@@ -54,7 +54,7 @@ def load_parser():
     # 
     # visualization part
     # 
-    output = parser.add_argument_group('Output control')
+    output = parser.add_argument_group('Output control')#显示帮助信息时分组
     output.add_argument('--vis_det', action='store_true')
     output.add_argument('--vis_repro', action='store_true')
     output.add_argument('--vis_smpl', action='store_true')
@@ -63,7 +63,7 @@ def load_parser():
     output.add_argument('--vis_mask', action='store_true')
     output.add_argument('--undis', action='store_true')
     output.add_argument('--sub_vis', type=str, nargs='+', default=[],
-        help='the sub folder lists for visualization')
+        help='the sub folder lists for visualization')#nargs='+'，可以传递多个参数，无参数时报错
     # 
     # debug
     # 
@@ -85,8 +85,8 @@ def load_parser():
 from os.path import join
 def save_parser(args):
     import yaml
-    res = vars(args)
-    os.makedirs(args.out, exist_ok=True)
+    res = vars(args)#
+    os.makedirs(args.out, exist_ok=True)#os.makedirs() 方法用于递归创建目录。
     with open(join(args.out, 'exp.yml'), 'w') as f:
         yaml.dump(res, f)
 
@@ -113,8 +113,9 @@ def parse_parser(parser):
         args.sub = clips
     if len(args.sub) == 0 and os.path.exists(join(args.path, 'images')):
         args.sub = sorted(os.listdir(join(args.path, 'images')))
-        if args.sub[0].isdigit():
-            args.sub = sorted(args.sub, key=lambda x:int(x))
-    args.opts = {args.opts[2*i]:float(args.opts[2*i+1]) for i in range(len(args.opts)//2)}
-    save_parser(args)
+        if args.sub[0].isdigit():#如果str(字符串)只包含数字则返回 True 否则返回 False。
+            #没搞明白这是要干什么？好像仅当视频数大于10有用，将文件夹排序
+            args.sub = sorted(args.sub, key=lambda x:int(x))#lambda没有名字的函数，x为参数它的类型自动跟args.sub中的元素一样，int(x)为表达式
+    args.opts = {args.opts[2*i]:float(args.opts[2*i+1]) for i in range(len(args.opts)//2)}#空
+    save_parser(args)#将args中的参数保存到exp.yml中
     return args

@@ -15,7 +15,7 @@ mkdir = lambda x:os.makedirs(x, exist_ok=True)
 def mkout(x):
     if x is not None:
         mkdir(os.path.dirname(x))
-def read_json(path):
+def read_json(path):#传入文件输出字典
     assert os.path.exists(path), path
     with open(path) as f:
         try:
@@ -62,24 +62,24 @@ def getFileList(root, ext='.jpg'):
 def read_annot(annotname, mode='body25'):
     data = read_json(annotname)
     if not isinstance(data, list):
-        data = data['annots']
+        data = data['annots']#data是列表，长度是openpose检测的人个数，元素是一个字典
     for i in range(len(data)):
-        if 'id' not in data[i].keys():
-            data[i]['id'] = data[i].pop('personID')
+        if 'id' not in data[i].keys():#改名
+            data[i]['id'] = data[i].pop('personID')#将personID删除修改成id
         if 'keypoints2d' in data[i].keys() and 'keypoints' not in data[i].keys():
-            data[i]['keypoints'] = data[i].pop('keypoints2d')
+            data[i]['keypoints'] = data[i].pop('keypoints2d')#跳过
         for key in ['bbox', 'keypoints', 
             'bbox_handl2d', 'handl2d', 
             'bbox_handr2d', 'handr2d', 
             'bbox_face2d', 'face2d']:
             if key not in data[i].keys():continue
-            data[i][key] = np.array(data[i][key])
+            data[i][key] = np.array(data[i][key])#将box从list变成np类型
             if key == 'face2d':
                 # TODO: Make parameters, 17 is the offset for the eye brows,
                 # etc. 51 is the total number of FLAME compatible landmarks
                 data[i][key] = data[i][key][17:17+51, :]
         if 'bbox' in data[i].keys():
-            data[i]['bbox'] = data[i]['bbox'][:5]
+            data[i]['bbox'] = data[i]['bbox'][:5]#取出box的前4项，不要置信度
             if data[i]['bbox'][-1] < 0.001:
                 print('{}/{} bbox conf = 0, may be error'.format(annotname, i))
                 data[i]['bbox'][-1] = 0

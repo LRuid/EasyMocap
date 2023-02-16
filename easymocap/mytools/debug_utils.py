@@ -44,7 +44,7 @@ def myerror(text):
     myprint(text, 'error')
 
 def run_cmd(cmd, verbo=True, bg=False):
-    if verbo: myprint('[run] ' + cmd, 'run')
+    if verbo: myprint('[run] ' + cmd, 'run')#打印
     if bg:
         args = cmd.split()
         print(args)

@@ -377,14 +377,14 @@ class MVBase:
         kpts_type='body15',
         undis=True, no_img=False, filter2d=None) -> None:
         self.root = root
-        self.image_root = join(root, image_root)
-        self.annot_root = join(root, annot_root)
-        self.kpts_type = kpts_type
+        self.image_root = join(root, image_root)#'/home/lrd/data/lrd/easymocap_filer/zju_data/images'
+        self.annot_root = join(root, annot_root)#'/home/lrd/data/lrd/easymocap_filer/zju_data/annots'
+        self.kpts_type = kpts_type#body_25
         self.undis = undis
         self.no_img = no_img
         # use when debug
         self.ret_crop = False
-        self.config = config
+        self.config = config#配置文件
         # results path
         # the results store keypoints3d
         self.skel_path = None
@@ -396,17 +396,17 @@ class MVBase:
         self.annotlist = {}
         for cam in cams: #TODO: 增加start,end
             # ATTN: when image name's frame number is not continuous,
-            imgnames = sorted(os.listdir(join(self.image_root, cam)))
-            self.imagelist[cam] = imgnames
-            if os.path.exists(self.annot_root):
+            imgnames = sorted(os.listdir(join(self.image_root, cam)))#图片列表
+            self.imagelist[cam] = imgnames#列表存入字典
+            if os.path.exists(self.annot_root):#如果注释存在
                 self.annotlist[cam] = sorted(os.listdir(join(self.annot_root, cam)))
-                self.has2d = True
+                self.has2d = True#代表有2d数据
             else:
                 self.has2d = False
-        nFrames = min([len(val) for key, val in self.imagelist.items()])
+        nFrames = min([len(val) for key, val in self.imagelist.items()])#创建一个val长度的列表，取其中最小值
         self.nFrames = nFrames
         self.nViews = len(cams)
-        self.read_camera(self.root)
+        self.read_camera(self.root)#输入'/home/lrd/data/lrd/easymocap_filer/zju_data'
         self.filter2d = filter2d
         if filter2d is not None:
             from .filter import make_filter
@@ -452,33 +452,33 @@ class MVBase:
                 det['keypoints'] = Undistort.points(keypoints=keypoints, K=camera['K'], dist=camera['dist'])
         return lDetections
 
-    def select_person(self, annots_all, index, pid):
+    def select_person(self, annots_all, index, pid):#就一个人pid==0,输入4个视角的注释文件，输出堆叠起来的矩阵
         annots = {'bbox': [], 'keypoints': []}
         for nv, cam in enumerate(self.cams):
             data = [d for d in annots_all[nv] if d['id'] == pid]
             if len(data) == 1:
-                data = data[0]
-                bbox = data['bbox']
-                keypoints = data['keypoints']
+                data = data[0]#把字典从列表取出来
+                bbox = data['bbox']#拿到bbox
+                keypoints = data['keypoints']#拿到关节点
             else:
                 if self.verbose:print('not found pid {} in frame {}, view {}'.format(self.pid, index, nv))
                 keypoints = np.zeros((self.config['nJoints'], 3))
                 bbox = np.array([0, 0, 100., 100., 0.])
-            annots['bbox'].append(bbox)
-            annots['keypoints'].append(keypoints)
+            annots['bbox'].append(bbox)#把bbox存入annots中，4个视角一起存入
+            annots['keypoints'].append(keypoints)#1个list存入4个视角keypoints
         for key in ['bbox', 'keypoints']:
-            annots[key] = np.stack(annots[key])
-        return annots
+            annots[key] = np.stack(annots[key])#把他们堆叠起来，变成np矩阵的形式
+        return annots#字典bbox:(4,5)和key:(4,25,3)
 
     def __getitem__(self, index: int):
         images, annots = [], []
-        for cam in self.cams:
+        for cam in self.cams:#迭代4次
             imgname = join(self.image_root, cam, self.imagelist[cam][index])
             assert os.path.exists(imgname), imgname
             if self.has2d:
                 annname = join(self.annot_root, cam, self.annotlist[cam][index])
                 assert os.path.exists(annname), annname
-                assert self.imagelist[cam][index].split('.')[0] == self.annotlist[cam][index].split('.')[0]
+                assert self.imagelist[cam][index].split('.')[0] == self.annotlist[cam][index].split('.')[0]#判断注释是否跟图片对应
                 annot = read_annot(annname, self.kpts_type)
             else:
                 annot = []
@@ -501,7 +501,7 @@ class MVBase:
         if self.undis:
             images = self.undistort(images)
             annots = self.undis_det(annots)
-        return images, annots
+        return images, annots#4个视角的.json中的keypoints
     
     def __len__(self) -> int:
         return self.nFrames

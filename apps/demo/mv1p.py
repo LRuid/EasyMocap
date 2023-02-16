@@ -15,26 +15,27 @@ import numpy as np
 
 def check_repro_error(keypoints3d, kpts_repro, keypoints2d, P, MAX_REPRO_ERROR):
     square_diff = (keypoints2d[:, :, :2] - kpts_repro[:, :, :2])**2 
-    conf = keypoints3d[None, :, -1:]
-    conf = (keypoints3d[None, :, -1:] > 0) * (keypoints2d[:, :, -1:] > 0)
-    dist = np.sqrt((((kpts_repro[..., :2] - keypoints2d[..., :2])*conf)**2).sum(axis=-1))
+    conf = keypoints3d[None, :, -1:]#(1,25,1)取出3d点的置信度
+    conf = (keypoints3d[None, :, -1:] > 0) * (keypoints2d[:, :, -1:] > 0)#(4,25,1)1=true or false 代表该点是否存在
+    #4个视角25个点的误差
+    dist = np.sqrt((((kpts_repro[..., :2] - keypoints2d[..., :2])*conf)**2).sum(axis=-1))#sqrt((x1-x2)^2+(y1-y2)^2)
     vv, jj = np.where(dist > MAX_REPRO_ERROR)
-    if vv.shape[0] > 0:
+    if vv.shape[0] > 0:#如果误差过大就重新重构
         keypoints2d[vv, jj, -1] = 0.
         keypoints3d, kpts_repro = simple_recon_person(keypoints2d, P)
     return keypoints3d, kpts_repro
 
 def mv1pmf_skel(dataset, check_repro=True, args=None):
-    MIN_CONF_THRES = args.thres2d
+    MIN_CONF_THRES = args.thres2d#0.3抑制噪声点阈值
     no_img = not (args.vis_det or args.vis_repro)
-    dataset.no_img = no_img
+    dataset.no_img = no_img#Flase变成True
     kp3ds = []
     start, end = args.start, min(args.end, len(dataset))
     kpts_repro = None
-    for nf in tqdm(range(start, end), desc='triangulation'):
-        images, annots = dataset[nf]
-        check_keypoints(annots['keypoints'], WEIGHT_DEBUFF=1, min_conf=MIN_CONF_THRES)
-        keypoints3d, kpts_repro = simple_recon_person(annots['keypoints'], dataset.Pall)
+    for nf in tqdm(range(start, end), desc='triangulation'):#0-800次迭代
+        images, annots = dataset[nf]#只需要拿数据中的annots就够了，关键信息。字典bbox:(4,5)和key:(4,25,3)
+        check_keypoints(annots['keypoints'], WEIGHT_DEBUFF=1, min_conf=MIN_CONF_THRES)#检测脸、手
+        keypoints3d, kpts_repro = simple_recon_person(annots['keypoints'], dataset.Pall)#所有相机的投影矩阵
         if check_repro:
             keypoints3d, kpts_repro = check_repro_error(keypoints3d, kpts_repro, annots['keypoints'], P=dataset.Pall, MAX_REPRO_ERROR=args.MAX_REPRO_ERROR)
         # keypoints3d, kpts_repro = robust_triangulate(annots['keypoints'], dataset.Pall, config=config, ret_repro=True)
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     from easymocap.dataset import CONFIG, MV1PMF
     parser = load_parser()
     parser.add_argument('--skel', action='store_true')
-    args = parse_parser(parser)
+    args = parse_parser(parser)#文件夹排序，存入exp.yml,返回参数
     help="""
   Demo code for multiple views and one person:
 
@@ -105,8 +106,8 @@ if __name__ == "__main__":
     - Body  : {}=>{}, {}
 """.format(args.path, ', '.join(args.sub), args.out, 
     args.model, args.gender, args.body)
-    print(help)
-    skel_path = join(args.out, 'keypoints3d')
+    print(help)#打印信息
+    skel_path = join(args.out, 'keypoints3d')#'/home/lrd/data/lrd/easymocap_filer/zju_data/output/smpl/keypoints3d'
     dataset = MV1PMF(args.path, annot_root=args.annot, cams=args.sub, out=args.out,
         config=CONFIG[args.body], kpts_type=args.body,
         undis=args.undis, no_img=False, verbose=args.verbose)
@@ -114,5 +115,5 @@ if __name__ == "__main__":
 
     if args.skel or not os.path.exists(skel_path):
         mv1pmf_skel(dataset, check_repro=True, args=args)
-    mv1pmf_smpl(dataset, args)
+    #mv1pmf_smpl(dataset, args)
     

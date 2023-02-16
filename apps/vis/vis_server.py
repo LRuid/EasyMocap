@@ -5,6 +5,7 @@
   @ LastEditTime: 2021-06-04 17:00:15
   @ FilePath: /EasyMocapRelease/apps/vis/vis_server.py
 '''
+#python3 apps/vis/vis_server.py --cfg config/vis3d/o3d_scene.yml
 # socket server for 3D visualization
 from easymocap.socket.o3d import VisOpen3DSocket
 from easymocap.config.vis_socket import Config
