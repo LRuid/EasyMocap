@@ -24,7 +24,7 @@ class Matcher:
     def __init__(self, path, mode, args) -> None:
         if mode == 'chessboard':
             pattern = args.pattern
-            lines, lines_color = get_lines_chessboard((9, 6))
+            lines, lines_color = get_lines_chessboard(args.pattern)#这里有点问题，我用的5*3 这里强制成9*6了
             self.nJoints = pattern[0]*pattern[1]
         else:
             annots = read_json(join(path, 'calib.json'))
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     from easymocap.annotator import load_parser, parse_parser
     parser = load_parser()
     parser.add_argument('--pattern', type=lambda x: (int(x.split(',')[0]), int(x.split(',')[1])),
-        help='The pattern of the chessboard', default=(9, 6))
+        help='The pattern of the chessboard', default=(5, 3))
     parser.add_argument('--mode', type=str, default='chessboard')
     args = parse_parser(parser)
 
