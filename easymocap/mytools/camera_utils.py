@@ -15,7 +15,7 @@ class FileStorage(object):
             self.fs.write('---\r\n')
         else:
             assert os.path.exists(filename), filename
-            self.fs = cv2.FileStorage(filename, cv2.FILE_STORAGE_READ)
+            self.fs = cv2.FileStorage(filename, cv2.FILE_STORAGE_READ)#读取内外参数矩阵yml文件
         self.isWrite = isWrite
 
     def __del__(self):
@@ -39,12 +39,13 @@ class FileStorage(object):
             for elem in value:
                 self._write('  - "{}"'.format(elem))
 
-    def read(self, key, dt='mat'):
+        #输入intri.yml文件中的key和想要输出的数据结构(list\mat),输出key中的值以list的形式
+    def read(self, key, dt='mat'):#key就是intri.yml文件中的names
         if dt == 'mat':
             output = self.fs.getNode(key).mat()
         elif dt == 'list':
             results = []
-            n = self.fs.getNode(key)
+            n = self.fs.getNode(key)#yml中的name有23个相机
             for i in range(n.size()):
                 val = n.at(i).string()
                 if val == '':
@@ -101,34 +102,35 @@ def write_extri(extri_name, cameras):
         extri.write('T_{}'.format(key), val['T'])
     return 0
 
+#输入内外参的文件，以及相机个数，输出
 def read_camera(intri_name, extri_name, cam_names=[]):
     assert os.path.exists(intri_name), intri_name
     assert os.path.exists(extri_name), extri_name
 
-    intri = FileStorage(intri_name)
+    intri = FileStorage(intri_name)#读取intri.yml文件
     extri = FileStorage(extri_name)
-    cams, P = {}, {}
-    cam_names = intri.read('names', dt='list')
+    cams, P = {}, {}#
+    cam_names = intri.read('names', dt='list')#将intri.yml中的names中的数据以list保存
     for cam in cam_names:
         # 内参只读子码流的
         cams[cam] = {}
-        cams[cam]['K'] = intri.read('K_{}'.format( cam))
-        cams[cam]['invK'] = np.linalg.inv(cams[cam]['K'])
-        Rvec = extri.read('R_{}'.format(cam))
+        cams[cam]['K'] = intri.read('K_{}'.format(cam))#读取K_n以矩阵mat的形式
+        cams[cam]['invK'] = np.linalg.inv(cams[cam]['K'])#求K的逆
+        Rvec = extri.read('R_{}'.format(cam))#读取外参数矩阵的旋转和平移向量
         Tvec = extri.read('T_{}'.format(cam))
         assert Rvec is not None, cam
-        R = cv2.Rodrigues(Rvec)[0]
-        RT = np.hstack((R, Tvec))
+        R = cv2.Rodrigues(Rvec)[0]#cv2.Rodrigues(Rvec)算出旋转矩阵和雅克比矩阵，选择旋转矩阵
+        RT = np.hstack((R, Tvec))#np.hstack将参数元组的元素数组按水平方向进行叠加 (3*3,3*1)=3*4
 
-        cams[cam]['RT'] = RT
+        cams[cam]['RT'] = RT#变换矩阵RT存入相机1的字典
         cams[cam]['R'] = R
         cams[cam]['Rvec'] = Rvec
         cams[cam]['T'] = Tvec
-        cams[cam]['center'] = - Rvec.T @ Tvec
-        P[cam] = cams[cam]['K'] @ cams[cam]['RT']
-        cams[cam]['P'] = P[cam]
+        cams[cam]['center'] = - Rvec.T @ Tvec#矩阵乘法
+        P[cam] = cams[cam]['K'] @ cams[cam]['RT']#相机1的投影矩阵M=KRT
+        cams[cam]['P'] = P[cam]#将P存入相机1的字典 
 
-        cams[cam]['dist'] = intri.read('dist_{}'.format(cam))
+        cams[cam]['dist'] = intri.read('dist_{}'.format(cam))#畸变矩阵5个参数
     cams['basenames'] = cam_names
     return cams
 

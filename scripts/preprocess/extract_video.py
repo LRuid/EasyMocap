@@ -227,7 +227,7 @@ if __name__ == "__main__":
     parser.add_argument('--mode', type=str, default='openpose', choices=['openpose', 'yolo-hrnet'], help="model to extract joints from image")
     parser.add_argument('--ext', type=str, default='jpg', choices=['jpg', 'png'], help="image file extension")
     parser.add_argument('--annot', type=str, default='annots', help="sub directory name to store the generated annotation files, default to be annots")
-    parser.add_argument('--highres', type=float, default=1)
+    parser.add_argument('--highres', type=float, default=1)#高分辨率
     parser.add_argument('--handface', action='store_true')#表示命令行只要输入了--handface ，handface=True
     parser.add_argument('--openpose', type=str, 
         default='/home/lrd/data/lrd/easymocap_filer/openpose')

@@ -5,7 +5,7 @@
   @ LastEditTime: 2022-05-23 23:10:43
   @ FilePath: /EasyMocapPublic/easymocap/estimator/openpose_wrapper.py
 '''
-import os
+import os,sys
 import shutil
 from tqdm import tqdm
 from .wrapper_base import bbox_from_keypoints, create_annot_file, check_result
@@ -46,12 +46,12 @@ def run_openpose(image_root, annot_root, config):
 
 def convert_from_openpose(src, dst, image_root, ext):
     # convert the 2d pose from openpose
-    inputlist = sorted(os.listdir(src))
+    inputlist = sorted(os.listdir(src))#将openpose/1中的文件排序
     for inp in tqdm(inputlist, desc='{:10s}'.format(os.path.basename(dst))):
-        annots = load_openpose(join(src, inp))
+        annots = load_openpose(join(src, inp))#list，包含0000.json中的数据，以及计算出的bbox
         base = inp.replace('_keypoints.json', '')
-        annotname = join(dst, base+'.json')
-        imgname = join(image_root, inp.replace('_keypoints.json', ext))
+        annotname = join(dst, base+'.json')#注释文件名，这里还未创建注释文件
+        imgname = join(image_root, inp.replace('_keypoints.json', ext))#图片文件名
         annot = create_annot_file(annotname, imgname)
         annot['annots'] = annots
         save_annot(annotname, annot)
@@ -63,6 +63,7 @@ def extract_2d(image_root, annot_root, tmp_root, config):
         return global_tasks
     if not check_result(image_root, tmp_root):
         run_openpose(image_root, tmp_root, config)
+        #runing_openpose(image_root)
     # TODO: add current task to global_tasks
     thread = Process(target=convert_from_openpose, 
         args=(tmp_root, annot_root, image_root, config['ext'])) # 应该不存在任何数据竞争
@@ -70,7 +71,7 @@ def extract_2d(image_root, annot_root, tmp_root, config):
     global_tasks.append(thread)
     return global_tasks
 
-def load_openpose(opname):
+def load_openpose(opname):#输入00000.json文件，输出一个包含注释的list
     mapname = {
         'face_keypoints_2d':'face2d', 
         'hand_left_keypoints_2d':'handl2d', 
@@ -79,7 +80,7 @@ def load_openpose(opname):
     data = read_json(opname)
     out = []
     pid = 0
-    for i, d in enumerate(data['people']):
+    for i, d in enumerate(data['people']):#data['people']是一个列表
         keypoints = d['pose_keypoints_2d']
         keypoints = np.array(keypoints).reshape(-1, 3)
         annot = {

@@ -26,7 +26,7 @@ def create_annot_file(annotname, imgname):
         'annots': [],
         'isKeyframe': False
     }
-    save_annot(annotname, annot)
+    save_annot(annotname, annot)#注释文件名和注释内容
     return annot
 
 def bbox_from_keypoints(keypoints, rescale=1.2, detection_thresh=0.05, MIN_PIXEL=5):

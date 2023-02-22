@@ -63,7 +63,7 @@ def load_model(gender='neutral', use_cuda=True, model_type='smpl', skel_type='bo
     body_model.to(device)
     return body_model
 
-def check_keypoints(keypoints2d, WEIGHT_DEBUFF=1, min_conf=0.3):
+def check_keypoints(keypoints2d, WEIGHT_DEBUFF=1, min_conf=0.3):#检测是否有脸部、手部点
     # keypoints2d: nFrames, nJoints, 3
     # 
     # wrong feet
