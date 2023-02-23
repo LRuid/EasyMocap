@@ -137,6 +137,8 @@ class AnnotBase:
             'capture_screen':False}
         self.set_frame(self.start)
         self.no_window = no_window
+
+        #由于vscode打开不了gui界面，调试的时候要把这里注释掉 2023.2.22 Ruid
         if not no_window:
             cv2.namedWindow(self.name)
             callback = ComposedCallback(processes=callbacks)
